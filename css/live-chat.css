@@ -1,0 +1,142 @@
+#livechatadmin-cms-content #Root > ul {
+    position: fixed;
+    top: -14px;
+    left: 278px;
+    z-index: 300;
+}
+#livechatadmin-cms-content #Root > ul li {
+    padding-top: 3px;
+}
+#livechatadmin-cms-content #Root > div {
+    margin: 15px
+}
+#LiveChatStartButton {
+    margin-left: 185px;
+}
+.root_MessageView .field { 
+    display: block; 
+    border-bottom: none; 
+    -webkit-box-shadow: none; 
+    -moz-box-shadow:  none; 
+    -o-box-shadow:  none; 
+    box-shadow: none; 
+}
+.root_MessageView .nolabel button {
+    float:left;
+}
+.root_MessageView .nolabel .messagetoname {
+    margin: 10px;
+    position: absolute;
+    left: 90px;
+    float: left;
+}
+.root_MessageView .nolabel .messagefromname {
+    margin: 10px;
+    position: absolute;
+    right: 0;
+    text-align: right;
+}
+.root_MessageView .nolabel .messagenamecontainer {
+    width: 549px;
+    position: relative;
+    height: 30px;
+    float: left;
+}
+#Form_LiveChatForm {
+    padding:0
+}
+.root_MessageView > .fieldgroup:nth-child(2) {
+    position: absolute;
+    bottom: 0;
+}
+.livechatsessioncontainer {
+    height:100%;
+}
+.livechatsessionwrapper {
+
+}
+.livechatsession {
+    width: 395px;
+    padding-right: 10px;
+    vertical-align: middle;
+    margin: 16px 0px 15px 21px;
+    position: fixed;
+    left: 400px;
+    top: 120px;
+    right: 0px;
+    bottom: 122px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+.livechatsession div {
+    max-width: 255px;
+    word-wrap: break-word;
+    margin-bottom: 20px;
+    line-height: 24px;
+}
+.livechatsession .clear {
+    clear: both;
+}
+.livechatsession .from-me {
+    position: relative;
+    padding: 10px 20px;
+    color: white;
+    background: #0B93F6;
+    border-radius: 25px;
+    float: right;
+}
+.livechatsession .from-me:before {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    bottom: -2px;
+    right: -7px;
+    height: 20px;
+    border-right: 20px solid #0B93F6;
+    border-bottom-left-radius: 16px 14px;
+    -webkit-transform: translate(0, -2px);
+}
+.livechatsession .from-me:after {
+    content: "";
+    position: absolute;
+    z-index: 1;
+    bottom: -2px;
+    right: -56px;
+    width: 26px;
+    height: 20px;
+    background: #e6eaed;
+    border-bottom-left-radius: 10px;
+    -webkit-transform: translate(-30px, -2px);
+}
+
+.livechatsession .from-them {
+    position: relative;
+    padding: 10px 20px;
+    background: #E5E5EA;
+    border-radius: 25px;
+    color: black;
+    float: left;
+}
+.livechatsession .from-them:before {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    bottom: -2px;
+    left: -7px;
+    height: 20px;
+    border-left: 20px solid #E5E5EA;
+    border-bottom-right-radius: 16px 14px;
+    -webkit-transform: translate(0, -2px);
+}
+.livechatsession .from-them:after {
+    content: "";
+    position: absolute;
+    z-index: 3;
+    bottom: -2px;
+    left: 4px;
+    width: 26px;
+    height: 20px;
+    background: #e6eaed;
+    border-bottom-right-radius: 10px;
+    -webkit-transform: translate(-30px, -2px);
+}

@@ -1,0 +1,8 @@
+---
+Name: livechat
+After:
+  - '#rootroutes'
+---
+LeftAndMain:
+    extra_requirements_javascript:
+        - 'livechat/javascript/LiveChatAdmin.js'

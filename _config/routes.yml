@@ -1,0 +1,7 @@
+---
+Name: livechat
+After: 'framework/routes#coreroutes'
+---
+Director:
+    rules:
+        'livechat-com//$Action' : 'LiveChat_Controller'
