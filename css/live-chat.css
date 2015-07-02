@@ -95,6 +95,9 @@
     border-right: 20px solid #0B93F6;
     border-bottom-left-radius: 16px 14px;
     -webkit-transform: translate(0, -2px);
+    -ms-transform: translate(0, -2px);
+    -moz-transform: translate(0, -2px);
+    transform: translate(0, -2px);
 }
 .livechatsession .from-me:after {
     content: "";
@@ -107,6 +110,9 @@
     background: #e6eaed;
     border-bottom-left-radius: 10px;
     -webkit-transform: translate(-30px, -2px);
+    -ms-transform: translate(-30px, -2px);
+    -moz-transform: translate(-30px, -2px);
+    transform: translate(-30px, -2px);
 }
 
 .livechatsession .from-them {
@@ -127,6 +133,9 @@
     border-left: 20px solid #E5E5EA;
     border-bottom-right-radius: 16px 14px;
     -webkit-transform: translate(0, -2px);
+    -ms-transform: translate(0, -2px);
+    -moz-transform: translate(0, -2px);
+    transform: translate(0, -2px);
 }
 .livechatsession .from-them:after {
     content: "";
@@ -139,4 +148,7 @@
     background: #e6eaed;
     border-bottom-right-radius: 10px;
     -webkit-transform: translate(-30px, -2px);
+    -ms-transform: translate(-30px, -2px);
+    -moz-transform: translate(-30px, -2px);
+    transform: translate(-30px, -2px);
 }

@@ -53,7 +53,7 @@
 									}
 								}
 							} else {
-								if (canplayaudio) {
+								if (canplayaudio && firstopen === false) {
 									var snd = new Audio("data:audio/mp3;base64," + incomingsound);
 									snd.play();
 								}
@@ -123,7 +123,7 @@
 			newli.find('a').attr('href', newli.find('a').attr('href') + mesgCount);
 			newli.removeAttr('aria-selected').removeClass('last');
 			newli.removeClass("ui-tabs-active").removeClass("ui-state-active");
-			
+
 			// again, flash the tab
 			for (i = 0; i < 3; i++) {
 				newli.fadeTo('fast', 0.2).fadeTo('fast', 1.0);
@@ -185,43 +185,49 @@
 		$('.ss-tabset').entwine({
 			// hide the new message tab
 			onmatch: function () {
-				$('[aria-controls="Root_MessageView"]').hide();
 				$('#Root_MessageView').addClass('root_MessageView');
-				
+
 				openallchatwindows();
 				this._super();
 			},
-			onunmatch: function () {
-				this._super();
-			},
-			// clicking on a tab. Reloads the messages
-			'ontabsbeforeactivate': function (e) {
-				var mid = $(e.srcElement).parent().attr('aria-id');
-				if (mid) {
-					// no messages there, so try to populate 
-					if (!$('.liveChatMessagePage[aria-id=' + mid + ']').find('.livechatsession div').attr('data-loaded')) {
-						$.ajax({
-							url: "/livechat-com/messages",
-							type: "GET",
-							data: {"ID": mid},
-							dataType: "json",
-							success: function (data) {
-								$('.liveChatMessagePage[aria-id=' + mid + ']').find('.livechatsession div').attr('data-loaded', 'true');
-								// clear the old messages
-								$('.liveChatMessagePage[aria-id=' + mid + ']').find('.livechatsession').html('');
-								chatpane = $('.liveChatMessagePage[aria-id=' + mid + ']').find('.livechatsession');
-								$.each(data, function (key, value) {
-									vclass = (value.ToID == mid) ? "from-me" : "from-them";
-									newmesg = $('<div class="' + vclass + '"><p>' + value.Message
-											+ '</p></div><div class="clear"></div>');
-									chatpane.append(newmesg);
-								});
+			redrawTabs: function () {
+				this.rewriteHashlinks();
+				this.tabs();
+				$('#Root_MessageView').addClass('root_MessageView');
+				$('[aria-controls="Root_MessageView"]').hide();
+				
+				// clicking on a tab. Reloads the messages
+				this.tabs({
+					activate: function(e, ui) {
+						var mid = $(ui.newTab).attr('aria-id');
+						if (mid) {
+							// no messages there, so try to populate 
+							if (!$('.liveChatMessagePage[aria-id=' + mid + ']').find('.livechatsession div').attr('data-loaded')) {
+								$.ajax({
+									url: "/livechat-com/messages",
+									type: "GET",
+									data: {"ID": mid},
+									dataType: "json",
+									success: function (data) {
+										$('.liveChatMessagePage[aria-id=' + mid + ']').find('.livechatsession div').attr('data-loaded', 'true');
+										// clear the old messages
+										$('.liveChatMessagePage[aria-id=' + mid + ']').find('.livechatsession').html('');
+										chatpane = $('.liveChatMessagePage[aria-id=' + mid + ']').find('.livechatsession');
+										$.each(data, function (key, value) {
+											vclass = (value.ToID == mid) ? "from-me" : "from-them";
+											newmesg = $('<div class="' + vclass + '"><p>' + value.Message
+													+ '</p></div><div class="clear"></div>');
+											chatpane.append(newmesg);
+										});
 
-								chatpane.animate({scrollTop: chatpane[0].scrollHeight}, 1000);
+										chatpane.animate({scrollTop: chatpane[0].scrollHeight}, 1000);
+									}
+								})
 							}
-						})
+						}
 					}
-				}
+				});
+				
 			}
 		});
 
@@ -248,6 +254,7 @@
 								$('#LiveChatStartButton').attr('data-id', prop);
 								$('#LiveChatStartButton').attr('data-name', ui.item.label);
 								$('#LiveChatStartButton').removeClass('ui-state-disabled').removeClass('ssui-button-disabled');
+								$('#LiveChatStartButton').removeAttr('aria-disabled').removeAttr('disabled');
 							}
 						}
 
@@ -259,16 +266,12 @@
 		// click the 'start chat' button
 		$('.LiveChatAdmin #LiveChatStartButton').entwine({
 			onclick: function (event) {
-				console.log('on click');
-				console.log($(this).attr('data-id'));
 				if ($(this).attr('data-id')) {
-				console.log('on sdfsdfk');
 					createNewMessageConsole($(this).attr('data-id'), $(this).attr('data-name'));
 					$('.ui-tabs [aria-id=' + $(this).attr('data-id') + '] a').first().trigger('click');
 				}
 			}
 		});
-
 
 		var incomingsound = "//LAwOyvAFoUXkGDT8gBXQIAYSA8Cfg2wVY40GPgB0CRkvPQOAA0ACAAgA4BuBIxNyFnW5HIaDQX\
 9nC7GcORDlj5hhiAdB9QdU6p1TveiAZBhwxnLOdNZ12nbWc8ZtnotGEcdNZ20nG2ap5ljgIdAGoO\

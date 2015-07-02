@@ -65,8 +65,10 @@ class LiveChat_Controller extends Controller {
 		// find the messages that have been sent to you
 		$query1 = new SQLQuery("*", "LiveChatMessage", "ToID = " . (int) Member::currentUserID());
 		$query1->addWhere("ID >= '" . (int) $request->getVar('lastid') . "'");
+		$query1->addWhere("\"Read\" = '0'");
 		$query1->addOrderBy("ID DESC");
 
+		// only select the largest ID, unique for each sender
 		$result = $query1->execute();
 		$returnar = array();
 
@@ -79,6 +81,15 @@ class LiveChat_Controller extends Controller {
 				"Read" => $id['Read'],
 				"Message" => $id['Message']
 			);
+		}
+		
+		foreach ($result as $mesg) {
+			// only update the ones that havn't been read, and the ones coming to you
+			if (!$id['Read'] && $id['ToID'] == Member::currentUserID()) {
+				$mymsg = LiveChatMessage::get()->byID($id['ID']);
+				$mymsg->Read = true;
+				$mymsg->write();
+			}
 		}
 
 		header('Content-Type: application/json');
@@ -153,7 +164,8 @@ class LiveChat_Controller extends Controller {
 
 		// update the messages as being read
 		foreach ($returnar as &$mesg) {
-			if (!$mesg->Read) {
+			// only update the ones that havn't been read, and the ones coming to you
+			if (!$mesg->Read && $mesg->ToID == Member::currentUserID()) {
 				$mymsg = LiveChatMessage::get()->byID($mesg->ID);
 				$mymsg->Read = true;
 				$mymsg->write();
