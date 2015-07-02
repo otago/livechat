@@ -7,6 +7,7 @@
 		var lastID = 0;	// the lastest message ID you've been updated with
 		var mesgCount = 0;	// number of chat windows open
 		var chatwindows = new Array();
+		var firstopen = true;
 
 		// poll the server for updated messages
 		(function poll() {
@@ -20,46 +21,48 @@
 						// if you've got an updated message , trigger a flash
 						if (parseInt(newid) > parseInt(lastID)) {
 							lastID = newid;
-							
+
 							// add new message to window
 							tabpane = $('.ss-tabset div[aria-id=' + value.FromID + ']');
 							chatpane = tabpane.find('.livechatsession').first();
-							if(chatpane.size() > 0) {
+							if (chatpane.size() > 0) {
 								var newmessagedom = $('<div class="from-them">' + value.Message + '</div><div class="clear"></div>');
 								chatpane.append(newmessagedom);
 								chatpane.animate({scrollTop: chatpane[0].scrollHeight}, 1000);
-							}
-							
-							// pulsate the item 
-							if (value.FromID in chatwindows) {
-								divitem = $('.ui-tabs li[aria-id=' + value.FromID + ']');
-								for (i = 0; i < 3; i++) {
-									divitem.fadeTo('fast', 0.2).fadeTo('fast', 1.0);
-								}
-								
-								// if you're in a different tab, flash it 
-								divitem2 = $('#Menu-LiveChatAdmin');
-								if(!divitem2.hasClass('opened')) {
-									for (i = 0; i < 3; i++) {
-										divitem2.fadeTo('fast', 0.2).fadeTo('fast', 1.0);
+
+								// pulsate the item 
+								if (value.FromID in chatwindows) {
+									divitem = $('.ui-tabs li[aria-id=' + value.FromID + ']');
+									if ("false" === divitem.attr('aria-selected')) {
+										for (i = 0; i < 3; i++) {
+											divitem.fadeTo('fast', 0.2).fadeTo('fast', 1.0);
+										}
+
+										// if you're in a different tab, flash it 
+										divitem2 = $('#Menu-LiveChatAdmin');
+										if (!divitem2.hasClass('opened') && firstopen === false) {
+											for (i = 0; i < 3; i++) {
+												divitem2.fadeTo('fast', 0.2).fadeTo('fast', 1.0);
+											}
+										}
+										// play incoming message sound
+										if (canplayaudio) {
+											var snd = new Audio("data:audio/mp3;base64," + incomingsound);
+											snd.play();
+										}
 									}
-								}
-								
-								// play incoming message sound
-								if (canplayaudio) {
-									var snd = new Audio("data:audio/mp3;base64," + incomingsound);
-									snd.play();
 								}
 							}
 						}
 						chatwindows[value.FromID] = value;
 					});
+					firstopen = false;
 					openallchatwindows();
 				},
 				complete: setTimeout(function () {
 					poll()
 				}, 10000),
-				timeout: 4000
+				timeout: 3000
 			})
 		})();
 
@@ -141,7 +144,7 @@
 					sendmessage($(this).closest('.liveChatMessagePage').attr('aria-id'), message);
 				}
 			})
-			
+
 			// removing the chat window. Will delete all message to and from a user
 			newpane.find('button.closechatwindow').bind('click', function () {
 				id = $(this).closest('.liveChatMessagePage').attr('aria-id');
@@ -152,11 +155,11 @@
 					data: {"ID": id},
 					dataType: "json",
 					success: function (data) {
-						delete chatwindows[id]; 
-						$( 'li[aria-id="'+id+'"]').parent().find('li > a').first().trigger('click');
+						delete chatwindows[id];
+						$('li[aria-id="' + id + '"]').parent().find('li > a').first().trigger('click');
 						var myid = mypane.closest('div.tab').attr('id');
-						$( "#" + myid ).remove();
-						$( 'li[aria-id="'+id+'"]').remove();
+						$("#" + myid).remove();
+						$('li[aria-id="' + id + '"]').remove();
 						$('.ss-tabset').tabs("refresh");
 					}
 				})
@@ -194,12 +197,15 @@
 							success: function (data) {
 								// clear the old messages
 								$('.liveChatMessagePage[aria-id=' + mid + ']').find('.livechatsession').html('');
+								chatpane = $('.liveChatMessagePage[aria-id=' + mid + ']').find('.livechatsession');
 								$.each(data, function (key, value) {
 									vclass = (value.ToID == mid) ? "from-me" : "from-them";
 									newmesg = $('<div class="' + vclass + '"><p>' + value.Message
 											+ '</p></div><div class="clear"></div>');
-									$('.liveChatMessagePage[aria-id=' + mid + ']').find('.livechatsession').append(newmesg);
+									chatpane.append(newmesg);
 								});
+
+								chatpane.animate({scrollTop: chatpane[0].scrollHeight}, 1000);
 							}
 						})
 					}
