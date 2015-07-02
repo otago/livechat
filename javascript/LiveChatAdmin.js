@@ -33,7 +33,7 @@
 								// pulsate the item 
 								if (value.FromID in chatwindows) {
 									divitem = $('.ui-tabs li[aria-id=' + value.FromID + ']');
-									if ("false" === divitem.attr('aria-selected')) {
+									if ("false" === divitem.attr('aria-selected') || !divitem.attr('aria-selected')) {
 										for (i = 0; i < 3; i++) {
 											divitem.fadeTo('fast', 0.2).fadeTo('fast', 1.0);
 										}
@@ -51,6 +51,11 @@
 											snd.play();
 										}
 									}
+								}
+							} else {
+								if (canplayaudio) {
+									var snd = new Audio("data:audio/mp3;base64," + incomingsound);
+									snd.play();
 								}
 							}
 						}
@@ -118,6 +123,11 @@
 			newli.find('a').attr('href', newli.find('a').attr('href') + mesgCount);
 			newli.removeAttr('aria-selected').removeClass('last');
 			newli.removeClass("ui-tabs-active").removeClass("ui-state-active");
+			
+			// again, flash the tab
+			for (i = 0; i < 3; i++) {
+				newli.fadeTo('fast', 0.2).fadeTo('fast', 1.0);
+			}
 
 			newli.attr('aria-id', id);
 			if (name) {
@@ -177,6 +187,7 @@
 			onmatch: function () {
 				$('[aria-controls="Root_MessageView"]').hide();
 				$('#Root_MessageView').addClass('root_MessageView');
+				
 				openallchatwindows();
 				this._super();
 			},
@@ -188,13 +199,14 @@
 				var mid = $(e.srcElement).parent().attr('aria-id');
 				if (mid) {
 					// no messages there, so try to populate 
-					if ($('.liveChatMessagePage[aria-id=' + mid + ']').find('.livechatsession div').size() == 0) {
+					if (!$('.liveChatMessagePage[aria-id=' + mid + ']').find('.livechatsession div').attr('data-loaded')) {
 						$.ajax({
 							url: "/livechat-com/messages",
 							type: "GET",
 							data: {"ID": mid},
 							dataType: "json",
 							success: function (data) {
+								$('.liveChatMessagePage[aria-id=' + mid + ']').find('.livechatsession div').attr('data-loaded', 'true');
 								// clear the old messages
 								$('.liveChatMessagePage[aria-id=' + mid + ']').find('.livechatsession').html('');
 								chatpane = $('.liveChatMessagePage[aria-id=' + mid + ']').find('.livechatsession');
@@ -247,7 +259,10 @@
 		// click the 'start chat' button
 		$('.LiveChatAdmin #LiveChatStartButton').entwine({
 			onclick: function (event) {
+				console.log('on click');
+				console.log($(this).attr('data-id'));
 				if ($(this).attr('data-id')) {
+				console.log('on sdfsdfk');
 					createNewMessageConsole($(this).attr('data-id'), $(this).attr('data-name'));
 					$('.ui-tabs [aria-id=' + $(this).attr('data-id') + '] a').first().trigger('click');
 				}
