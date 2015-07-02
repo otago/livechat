@@ -1,0 +1,10 @@
+{
+    "name": "otago/livechat",
+    "description": "SilverStripe Live Chat",
+    "require": {
+        "php": ">=5.3.2",
+        "silverstripe/cms": "3.*",
+        "silverstripe/framework": "3.*"
+    },
+    "minimum-stability": "dev"
+}
