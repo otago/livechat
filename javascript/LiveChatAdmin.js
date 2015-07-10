@@ -9,6 +9,19 @@
 		var chatwindows = new Array();
 		var firstopen = true;
 
+		// first, open up all the chat tabs you have
+		$.ajax({
+			url: "/livechat-com/openchats",
+			type: "GET",
+			dataType: "json",
+			success: function (data) {
+				$.each(data, function (chatid, value) {
+					chatwindows[value.FromID] = value;
+				});
+				openallchatwindows();
+			}
+		});
+
 		// poll the server for updated messages
 		(function poll() {
 			$.ajax({
@@ -65,10 +78,10 @@
 					openallchatwindows();
 				},
 				complete: setTimeout(function () {
-					poll()
+					poll();
 				}, 10000),
 				timeout: 3000
-			})
+			});
 		})();
 
 		// will open up all the chat windows in your session
@@ -77,12 +90,12 @@
 				user = chatwindows[key];
 				createNewMessageConsole(key, user.Name);
 			}
-		}
+		};
 
 		var canplayaudio = function () {
 			var a = document.createElement('audio');
 			return !!(a.canPlayType && a.canPlayType('audio/mpeg;').replace(/no/, ''));
-		}
+		};
 
 
 		// will use the API to transmit a message
@@ -92,9 +105,12 @@
 				url: '/livechat-com/message',
 				data: {'To': to, 'Message': message},
 				success: function () {
+					if (!$.isNumeric(to)) {
+						to = $("#Form_LiveChatForm .ui-tabs-nav li a:contains('" + to + "')").parent().attr('aria-id');
+					}
 					var containerpane = $(document).find('#Form_LiveChatForm [aria-id="' + to + '"]');
 					var newmessagedom = $('<div class="from-me"></div><div class="clear"></div>');
-					newmessagedom.first('.from-me').text(message)
+					newmessagedom.first('.from-me').text(message);
 					var livechatses = $(containerpane).find('.livechatsession').first();
 					livechatses.append(newmessagedom);
 					$(containerpane).find('textarea').val('');
@@ -151,18 +167,27 @@
 			newpane.find('button.send').bind('click', function () {
 				message = $(this).closest('.fieldgroup').find('textarea').val();
 				if (message) {
-					sendmessage($(this).closest('.liveChatMessagePage').attr('aria-id'), message);
+					toid = $(this).closest('.liveChatMessagePage').attr('aria-id');
+					if (!$.isNumeric(toid)) {
+						toid = $('li[aria-id="' + toid + '"]').find('a').html();
+					}
+					sendmessage(toid, message);
 				}
-			})
+			});
 
 			// removing the chat window. Will delete all message to and from a user
 			newpane.find('button.closechatwindow').bind('click', function () {
 				id = $(this).closest('.liveChatMessagePage').attr('aria-id');
+				sendid = id;
 				var mypane = $(this).closest('.liveChatMessagePage');
+
+				if (!$.isNumeric(id)) {
+					sendid = $('li[aria-id="' + id + '"]').find('a').html();
+				}
 				$.ajax({
 					url: "/livechat-com/delete",
 					type: "GET",
-					data: {"ID": id},
+					data: {"ID": sendid},
 					dataType: "json",
 					success: function (data) {
 						delete chatwindows[id];
@@ -172,13 +197,13 @@
 						$('li[aria-id="' + id + '"]').remove();
 						$('.ss-tabset').tabs("refresh");
 					}
-				})
-			})
+				});
+			});
 			newpane.find('.messagetoname').html(name + ' #' + id);
 			$('.ss-tabset').tabs("refresh");
 
 			mesgCount++;
-		}
+		};
 
 
 		// when the user naviates to Live Chat tab
@@ -195,18 +220,24 @@
 				this.tabs();
 				$('#Root_MessageView').addClass('root_MessageView');
 				$('[aria-controls="Root_MessageView"]').hide();
-				
+
 				// clicking on a tab. Reloads the messages
 				this.tabs({
-					activate: function(e, ui) {
+					activate: function (e, ui) {
 						var mid = $(ui.newTab).attr('aria-id');
+						var sendid = mid;
+
+						// from user is a non member
+						if (!$.isNumeric(mid)) {
+							sendid = $('li[aria-id="' + mid + '"]').find('a').html();
+						}
 						if (mid) {
 							// no messages there, so try to populate 
 							if (!$('.liveChatMessagePage[aria-id=' + mid + ']').find('.livechatsession div').attr('data-loaded')) {
 								$.ajax({
 									url: "/livechat-com/messages",
 									type: "GET",
-									data: {"ID": mid},
+									data: {"ID": sendid},
 									dataType: "json",
 									success: function (data) {
 										$('.liveChatMessagePage[aria-id=' + mid + ']').find('.livechatsession div').attr('data-loaded', 'true');
@@ -214,7 +245,7 @@
 										$('.liveChatMessagePage[aria-id=' + mid + ']').find('.livechatsession').html('');
 										chatpane = $('.liveChatMessagePage[aria-id=' + mid + ']').find('.livechatsession');
 										$.each(data, function (key, value) {
-											vclass = (value.ToID == mid) ? "from-me" : "from-them";
+											vclass = (value.ToID === mid || value.ToID === '0') ? "from-me" : "from-them";
 											newmesg = $('<div class="' + vclass + '"><p>' + value.Message
 													+ '</p></div><div class="clear"></div>');
 											chatpane.append(newmesg);
@@ -222,12 +253,12 @@
 
 										chatpane.animate({scrollTop: chatpane[0].scrollHeight}, 1000);
 									}
-								})
+								});
 							}
 						}
 					}
 				});
-				
+
 			}
 		});
 
@@ -250,11 +281,13 @@
 					select: function (event, ui) {
 						// try to find the ID of the person you want to message
 						for (var prop in myliveautocompletetags) {
-							if (myliveautocompletetags.hasOwnProperty(prop) && myliveautocompletetags[prop] == ui.item.label) {
+							if (myliveautocompletetags.hasOwnProperty(prop) && myliveautocompletetags[prop] === ui.item.label) {
 								$('#LiveChatStartButton').attr('data-id', prop);
+
 								$('#LiveChatStartButton').attr('data-name', ui.item.label);
-								$('#LiveChatStartButton').removeClass('ui-state-disabled').removeClass('ssui-button-disabled');
-								$('#LiveChatStartButton').removeAttr('aria-disabled').removeAttr('disabled');
+								$('#LiveChatStartButton').button({
+									disabled: false
+								});
 							}
 						}
 
@@ -270,6 +303,7 @@
 					createNewMessageConsole($(this).attr('data-id'), $(this).attr('data-name'));
 					$('.ui-tabs [aria-id=' + $(this).attr('data-id') + '] a').first().trigger('click');
 				}
+				this._super(event);
 			}
 		});
 

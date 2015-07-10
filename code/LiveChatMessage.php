@@ -7,7 +7,7 @@ class LiveChatMessage extends DataObject {
 	public static $db = array(
 		'Message' => 'Text',
 		"FromIP" => 'Text',
-		"FromName" => 'Text', // ID for anonymous conversations 
+		"FromName" => 'Text', // name for anonymous conversations. Must not be numeric. 
 		'Read' => 'Boolean'
 	);
 	public static $has_one = array(
