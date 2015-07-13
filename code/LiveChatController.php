@@ -1,11 +1,14 @@
 <?php
 
+/**
+ * handles polling, deleting, creation, fetching of live chat messages
+ */
 class LiveChat_Controller extends Controller {
 
 	private static $url_handlers = array(
 		'member-search' => 'member_search',
 		'poll' => 'get_poll',
-		'openchats' => 'get_openchats',	
+		'openchats' => 'get_openchats',
 		'messages' => 'get_messages',
 		'message' => 'set_message',
 		'delete' => 'delete_message'
@@ -16,7 +19,7 @@ class LiveChat_Controller extends Controller {
 		'get_poll',
 		'get_messages',
 		'set_message',
-		'delete_message'// removes messages to/from a user
+		'delete_message' // removes messages to/from a user
 	);
 
 	/**
@@ -47,7 +50,7 @@ class LiveChat_Controller extends Controller {
 		header("HTTP/1.0 400 Bad Request");
 		die('No member found');
 	}
-	
+
 	/**
 	 * Polls the message queue. Will return a map of senders with the lastest message ID
 	 * @see http://stackoverflow.com/questions/12102200/get-records-with-max-value-for-each-group-of-grouped-sql-results
@@ -83,11 +86,11 @@ class LiveChat_Controller extends Controller {
 				"Message" => $id['Message']
 			);
 		}
-		
+
 		foreach ($result as $mesg) {
 			// only update the ones that havn't been read, and the ones coming to you
-			if (!$id['Read'] && $id['ToID'] == Member::currentUserID()) {
-				$mymsg = LiveChatMessage::get()->byID($id['ID']);
+			if (!$mesg['Read'] && $mesg['ToID'] == Member::currentUserID()) {
+				$mymsg = LiveChatMessage::get()->byID($mesg['ID']);
 				$mymsg->Read = true;
 				$mymsg->write();
 			}
@@ -112,10 +115,10 @@ class LiveChat_Controller extends Controller {
 		// find the messages that have been sent to you
 		$query1 = new SQLQuery("*", "LiveChatMessage", "ToID = " . (int) Member::currentUserID());
 		$query1->addOrderBy("ID DESC");
-		
+
 		$query2 = new SQLQuery("ID, FromID, FromName", '(' . $query1->sql() . ') x');
 		$query2->addGroupBy("FromID, FromName");
-		
+
 		// only select the largest ID, unique for each sender
 		$result = $query2->execute();
 		$returnar = array();
@@ -127,15 +130,6 @@ class LiveChat_Controller extends Controller {
 				"Name" => $member ? $member->getName() : $id['FromName'],
 				"FromID" => $id['FromID'] ? $id['FromID'] : md5($id['FromName'])
 			);
-		}
-		
-		foreach ($result as $mesg) {
-			// only update the ones that havn't been read, and the ones coming to you
-			if (!$id['Read'] && $id['ToID'] == Member::currentUserID()) {
-				$mymsg = LiveChatMessage::get()->byID($id['ID']);
-				$mymsg->Read = true;
-				$mymsg->write();
-			}
 		}
 
 		header('Content-Type: application/json');
@@ -163,7 +157,12 @@ class LiveChat_Controller extends Controller {
 			header("HTTP/1.0 400 Bad Request");
 			die('No target user ID found');
 		}
-		
+		// redirecting one user to another
+		if (substr($request->postVar('Message'), 0, 9) == '/redirect') {
+			$this->redirectChatToUser($request->postVar('To'), substr($request->postVar('Message'), 10));
+			die();
+		}
+
 		LiveChatMessage::create(array(
 			'Message' => htmlentities($request->postVar('Message')),
 			'ToID' => is_numeric($request->postVar('To')) ? $request->postVar('To') : 0,
@@ -194,17 +193,16 @@ class LiveChat_Controller extends Controller {
 		$returnar = null;
 		if (is_numeric($request->getVar('ID'))) {
 			$returnar = LiveChatMessage::get()->alterDataQuery(function($query, $list) {
-				$subquery = $query->disjunctiveGroup();
-				$subquery->whereAny("\"FromID\" = " . (int) $_GET['ID'] . ' AND "ToID" = ' . Member::currentUserID());
-				$subquery->whereAny("\"FromID\" = " . Member::currentUserID() . ' AND "ToID" = ' . (int) $_GET['ID']);
-			});
+						$subquery = $query->disjunctiveGroup();
+						$subquery->whereAny("\"FromID\" = " . (int) $_GET['ID'] . ' AND "ToID" = ' . Member::currentUserID());
+						$subquery->whereAny("\"FromID\" = " . Member::currentUserID() . ' AND "ToID" = ' . (int) $_GET['ID']);
+					})->sort('ID');
 		} else {
 			$returnar = LiveChatMessage::get()->alterDataQuery(function($query, $list) {
-				$subquery = $query->disjunctiveGroup();
-				$subquery->whereAny("\"FromName\" = '" . Convert::raw2sql($_GET['ID']) . '\' AND "ToID" = ' . Member::currentUserID());
-				$subquery->whereAny("\"FromID\" = " . Member::currentUserID() . ' AND "FromName" = \'' . Convert::raw2sql($_GET['ID']).'\'');
-			});
-			
+						$subquery = $query->disjunctiveGroup();
+						$subquery->whereAny("\"FromName\" = '" . Convert::raw2sql($_GET['ID']) . '\' AND "ToID" = ' . Member::currentUserID());
+						$subquery->whereAny("\"FromID\" = " . Member::currentUserID() . ' AND "FromName" = \'' . Convert::raw2sql($_GET['ID']) . '\'');
+					})->sort('ID');
 		}
 
 		header('Content-Type: application/json');
@@ -247,15 +245,47 @@ class LiveChat_Controller extends Controller {
 			$returnar = LiveChatMessage::get()->alterDataQuery(function($query, $list) {
 				$subquery = $query->disjunctiveGroup();
 				$subquery->whereAny("\"FromName\" = '" . Convert::raw2sql($_GET['ID']) . '\' AND "ToID" = ' . Member::currentUserID());
-				$subquery->whereAny("\"FromID\" = " . Member::currentUserID() . ' AND "FromName" = \'' . Convert::raw2sql($_GET['ID']).'\'');
+				$subquery->whereAny("\"FromID\" = " . Member::currentUserID() . ' AND "FromName" = \'' . Convert::raw2sql($_GET['ID']) . '\'');
 			});
 		}
-		
+
 		header('Content-Type: application/json');
 		foreach ($returnar as &$mesg) {
 			$mesg->delete();
 		}
 		die();
+	}
+
+	/**
+	 * Changes all messages from a user, to a nother user.
+	 * @param int|string $from either a string or an ID 
+	 * @param int $to ID of user to transfeer to
+	 */
+	public function redirectChatToUser($from, $to) {
+		$GLOBALS['LIVE_CHAT_FROM_TARGET'] = $from;
+		$GLOBALS['LIVE_CHAT_TO_TARGET'] = $to;
+		$returnar = array();
+		if (is_numeric($from)) {
+			$returnar = LiveChatMessage::get()->alterDataQuery(function($query, $list) {
+				$subquery = $query->disjunctiveGroup();
+				$subquery->whereAny("\"FromID\" = " . (int) $GLOBALS['LIVE_CHAT_FROM_TARGET'] . ' AND "ToID" = ' . Member::currentUserID());
+				$subquery->whereAny("\"FromID\" = " . Member::currentUserID() . ' AND "ToID" = ' . (int) $GLOBALS['LIVE_CHAT_FROM_TARGET']);
+			});
+		} else {
+			$returnar = LiveChatMessage::get()->alterDataQuery(function($query, $list) {
+				$subquery = $query->disjunctiveGroup();
+				$subquery->whereAny("\"FromName\" = '" . Convert::raw2sql($GLOBALS['LIVE_CHAT_FROM_TARGET']) . '\' AND "ToID" = ' . Member::currentUserID());
+				$subquery->whereAny("\"FromID\" = " . Member::currentUserID() . ' AND "FromName" = \'' . Convert::raw2sql($GLOBALS['LIVE_CHAT_FROM_TARGET']) . '\'');
+			});
+		}
+		foreach ($returnar as &$mesg) {
+			if ($mesg->FromID == Member::currentUserID()) {
+				$mesg->FromID = $to;
+			} else {
+				$mesg->ToID = $to;
+			}
+			$mesg->write();
+		}
 	}
 
 }
