@@ -257,7 +257,6 @@ class LiveChat_Controller extends Controller {
 			$mesg->delete();
 			$backup = LiveChatMessageArchive::create($mesg->toMap());
 			$backup->write();
-			//debug::show($backup);
 		}
 		die();
 	}
