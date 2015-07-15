@@ -70,7 +70,7 @@ class LiveChat_Controller extends Controller {
 		// find the messages that have been sent to you
 		$query = new SQLQuery("*", "LiveChatMessage", "ToID = " . (int) Member::currentUserID());
 		$query->addWhere("ID >= '" . (int) $request->getVar('lastid') . "'");
-		$query->addWhere("\"Read\" = '0'");
+		$query->addWhere("ClassName = 'LiveChatMessage'");
 		$query->addOrderBy("ID DESC");
 
 		$result = $query->execute();
@@ -104,7 +104,6 @@ class LiveChat_Controller extends Controller {
 	/**
 	 * Polls the message queue. Will return a map of senders with the lastest message ID
 	 * @see http://stackoverflow.com/questions/12102200/get-records-with-max-value-for-each-group-of-grouped-sql-results
-	 * @param GET 'lastid' the highest ID in you message queue
 	 * @param SS_HTTPRequest $request
 	 */
 	public function get_openchats(SS_HTTPRequest $request) {
@@ -116,6 +115,7 @@ class LiveChat_Controller extends Controller {
 		// find the messages that have been sent to you
 		$query1 = new SQLQuery("*", "LiveChatMessage", "ToID = " . (int) Member::currentUserID());
 		$query1->addOrderBy("ID DESC");
+		$query1->addWhere("ClassName = 'LiveChatMessage'");
 
 		$query2 = new SQLQuery("ID, FromID, FromName", '(' . $query1->sql() . ') x');
 		$query2->addGroupBy("FromID, FromName");
@@ -254,9 +254,8 @@ class LiveChat_Controller extends Controller {
 
 		header('Content-Type: application/json');
 		foreach ($returnar as &$mesg) {
-			$mesg->delete();
-			$backup = LiveChatMessageArchive::create($mesg->toMap());
-			$backup->write();
+			$mesg->setClassName('LiveChatMessageArchive');
+			$mesg->write();
 		}
 		die();
 	}
