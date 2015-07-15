@@ -74,6 +74,7 @@ class LiveChat_Controller extends Controller {
 		$query->addOrderBy("ID DESC");
 
 		$result = $query->execute();
+		
 		$returnar = array();
 
 		// add the names to the array
@@ -204,7 +205,8 @@ class LiveChat_Controller extends Controller {
 						$subquery->whereAny("\"FromID\" = " . Member::currentUserID() . ' AND "FromName" = \'' . Convert::raw2sql($_GET['ID']) . '\'');
 					})->sort('ID');
 		}
-
+		$returnar->filter(array('ClassName'=>'LiveChatMessage'));
+		
 		header('Content-Type: application/json');
 
 		// update the messages as being read
@@ -248,10 +250,14 @@ class LiveChat_Controller extends Controller {
 				$subquery->whereAny("\"FromID\" = " . Member::currentUserID() . ' AND "FromName" = \'' . Convert::raw2sql($_GET['ID']) . '\'');
 			});
 		}
+		$returnar->filter(array('ClassName'=>'LiveChatMessage'));
 
 		header('Content-Type: application/json');
 		foreach ($returnar as &$mesg) {
 			$mesg->delete();
+			$backup = LiveChatMessageArchive::create($mesg->toMap());
+			$backup->write();
+			//debug::show($backup);
 		}
 		die();
 	}
@@ -278,6 +284,8 @@ class LiveChat_Controller extends Controller {
 				$subquery->whereAny("\"FromID\" = " . Member::currentUserID() . ' AND "FromName" = \'' . Convert::raw2sql($GLOBALS['LIVE_CHAT_FROM_TARGET']) . '\'');
 			});
 		}
+		$returnar->filter(array('ClassName'=>'LiveChatMessage'));
+		
 		foreach ($returnar as &$mesg) {
 			if ($mesg->FromID == Member::currentUserID()) {
 				$mesg->FromID = $to;
@@ -286,6 +294,15 @@ class LiveChat_Controller extends Controller {
 			}
 			$mesg->write();
 		}
+	}
+	public function canView($member = null) {
+		return true;
+	}
+	public function canEdit($member = null) {
+		return true;
+	}
+	public function canDelete($member = null) {
+		return true;
 	}
 
 }
